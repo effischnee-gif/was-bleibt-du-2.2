@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Was bleibt – AR V8 mit Audio</title>
+
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+<style>
+  html,body { margin:0; width:100%; height:100%; overflow:hidden; background:transparent; }
+  #audioPanel {
+    position:fixed; left:50%; bottom:max(24px, env(safe-area-inset-bottom));
+    transform:translateX(-50%); z-index:9999;
+    display:none; align-items:center; gap:10px;
+    background:rgba(15,15,15,.72); color:#fff;
+    padding:10px 14px; border-radius:999px;
+    font:15px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    box-shadow:0 4px 20px rgba(0,0,0,.22);
+  }
+  #audioButton {
+    border:0; border-radius:999px; padding:9px 14px;
+    background:#fff; color:#111; font-weight:600; font-size:15px;
+  }
+  #audioStatus { white-space:nowrap; opacity:.95; }
+</style>
+
+<script>
+AFRAME.registerComponent("bag", {
+  init() {
+    this.m = [];
+    this.el.addEventListener("model-loaded", () => {
+      this.el.getObject3D("mesh").traverse(o => {
+        if (o.isMesh) {
+          o.material.transparent = true;
+          o.material.opacity = .29;
+          o.material.depthWrite = false;
+          o.material.side = THREE.DoubleSide;
+          if (o.morphTargetInfluences) this.m.push(o);
+        }
+      });
+    });
+  },
+  tick(t) {
+    let s=t/1000;
+    let q=[
+      .30*(.5+.5*Math.sin(s*.40)),
+      .23*(.5+.5*Math.sin(s*.25+1)),
+      .27*(.5+.5*Math.sin(s*.20+3.8)),
+      .20*(.5+.5*Math.sin(s*.31+2.4)),
+      .25*(.5+.5*Math.sin(s*.48+4.8)),
+      .22*(.5+.5*Math.sin(s*.63))
+    ];
+    this.m.forEach(m => q.forEach((v,i) => m.morphTargetInfluences[i]=v));
+    this.el.object3D.rotation.y=s*.115;
+    this.el.object3D.rotation.x=.045*Math.sin(s*.23);
+    this.el.object3D.rotation.z=.055*Math.sin(s*.29);
+  }
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const target = document.querySelector("#target");
+  const panel = document.querySelector("#audioPanel");
+  const button = document.querySelector("#audioButton");
+  const status = document.querySelector("#audioStatus");
+  const audio = document.querySelector("#narration");
+
+  let targetVisible = false;
+
+  target.addEventListener("targetFound", () => {
+    targetVisible = true;
+    panel.style.display = "flex";
+    status.textContent = audio.paused ? "Was bleibt? – anhören" : "Erzählung läuft";
+  });
+
+  target.addEventListener("targetLost", () => {
+    targetVisible = false;
+    // Audio continues deliberately, so visitors can keep listening
+    // even if the camera briefly loses the photograph.
+    if (audio.paused) panel.style.display = "none";
+  });
+
+  button.addEventListener("click", async () => {
+    try {
+      if (audio.paused) {
+        await audio.play();
+        button.textContent = "❚❚ Pause";
+        status.textContent = "Erzählung läuft";
+        panel.style.display = "flex";
+      } else {
+        audio.pause();
+        button.textContent = "▶ Anhören";
+        status.textContent = "Pausiert";
+      }
+    } catch(e) {
+      status.textContent = "Zum Starten erneut tippen";
+    }
+  });
+
+  audio.addEventListener("ended", () => {
+    button.textContent = "▶ Noch einmal";
+    status.textContent = "Was bleibt?";
+    if (!targetVisible) panel.style.display = "none";
+  });
+});
+</script>
+</head>
+
+<body>
+<audio id="narration" preload="auto" playsinline>
+  <source src="./Was_bleibt_Audio.m4a" type="audio/mp4">
+</audio>
+
+<div id="audioPanel" aria-label="Audioguide">
+  <button id="audioButton" type="button">▶ Anhören</button>
+  <span id="audioStatus">Was bleibt? – anhören</span>
+</div>
+
+<a-scene
+  mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1"
+  renderer="colorManagement:true; alpha:true; antialias:true"
+  vr-mode-ui="enabled:false"
+  device-orientation-permission-ui="enabled:false">
+
+  <a-assets>
+    <a-asset-item id="b" src="./Muelltuete_AR_V7_originalgetreu.glb"></a-asset-item>
+  </a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled:false"></a-camera>
+  <a-entity light="type:ambient; intensity:.75"></a-entity>
+  <a-entity light="type:directional; intensity:1.4" position="-2 2 3"></a-entity>
+
+  <a-entity id="target" mindar-image-target="targetIndex:0">
+    <a-gltf-model
+      src="#b"
+      position="0 0 .32"
+      scale=".82 .82 .82"
+      bag>
+    </a-gltf-model>
+  </a-entity>
+</a-scene>
+</body>
+</html>
