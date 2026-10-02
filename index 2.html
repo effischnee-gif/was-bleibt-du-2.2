@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Was bleibt – AR Kameratest</title>
+<script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}
+#status{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+z-index:9999;padding:10px 16px;border-radius:20px;background:rgba(0,0,0,.65);
+color:#fff;font:16px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="status">Suche das Bild …</div>
+<a-scene
+ mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; uiLoading: yes; uiScanning: yes; uiError: yes"
+ color-space="sRGB"
+ renderer="colorManagement: true, physicallyCorrectLights"
+ vr-mode-ui="enabled: false"
+ device-orientation-permission-ui="enabled: false">
+
+<a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+<a-entity mindar-image-target="targetIndex: 0">
+<a-box position="0 0 0.15" scale="0.35 0.35 0.35"
+ material="color: white; roughness: 0.35; metalness: 0.05">
+<a-animation attribute="rotation" dur="5000" to="0 360 0"
+ repeat="indefinite" easing="linear"></a-animation>
+</a-box>
+</a-entity>
+</a-scene>
+
+<script>
+const scene=document.querySelector('a-scene');
+const status=document.getElementById('status');
+scene.addEventListener('targetFound',()=>status.textContent='✓ Bild erkannt – AR funktioniert');
+scene.addEventListener('targetLost',()=>status.textContent='Bild verloren – wieder auf das Bild richten');
+</script>
+</body>
+</html>
